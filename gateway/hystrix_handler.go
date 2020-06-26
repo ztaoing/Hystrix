@@ -36,6 +36,7 @@ func NewHystrixHandler(discoverClient discover.DiscoveryClient, loadbalance load
 		logger:          logger,
 	}
 }
+
 func (hy *HystrixHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	reqPath := req.URL.Path
 	if reqPath == "" {

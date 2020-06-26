@@ -48,5 +48,5 @@ func main() {
 
 	//获取状态
 	circuit, _, _ := hystrix.GetCircuit("test_command")
-	fmt.Println("command test_command circuit open is" + strconv.FormatBool(circuit.IsOpen()))
+	fmt.Println("command test_command circuit open is " + strconv.FormatBool(circuit.IsOpen()))
 }

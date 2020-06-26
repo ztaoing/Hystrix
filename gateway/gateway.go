@@ -40,6 +40,7 @@ func main() {
 		os.Exit(-1)
 	}
 	//创建方向代理
+	//TODO undefined: NewHystrixHandler
 	proxy := NewHystrixHandler(consulClient, new(loadbalance.RandomLoadBalance), log.New(os.Stderr, "", log.LstdFlags))
 
 	errC := make(chan error)
