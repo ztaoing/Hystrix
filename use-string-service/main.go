@@ -50,18 +50,30 @@ func main() {
 
 	//【endpoint层】
 	useStringEndpoint := endpoint.MakeUseStringEndpoint(svc)
-	//(使用装饰者模式)
-	useStringEndpoint = circuitbreaker.Hystrix(service.StringServiceCommandName)(useStringEndpoint)
+	useStringEndpointWithKit := endpoint.MakeUseStringEndpointWithKit(svc)
+	//(使用装饰者模式)添加hystrix中间件
+	//kit的hystrix也是使用hystrix.Do方法对endpoint的调用方法进行包装
+	//注意：但是使用kit的hystrix将无法定义相关的失败回滚函数，不利于远程调用失败后的恢复处理工作
+	useStringEndpointWithKit = circuitbreaker.Hystrix(service.StringServiceCommandName)(useStringEndpoint)
+
 	healthEndpoint := endpoint.MakeHealthCheckEndpoint(svc)
 	//封装
-	endpts := endpoint.UseStringEndpoint{
-		UseStringEndpoint:   useStringEndpoint,
+	/*
+		endpts := endpoint.UseStringEndpoint{
+			UseStringEndpoint:   useStringEndpoint,
+			HealthCheckEndpoint: healthEndpoint,
+		}
+	*/
+	endptsWithKit := endpoint.UseStringEndpoint{
+		UseStringEndpoint:   useStringEndpointWithKit,
 		HealthCheckEndpoint: healthEndpoint,
 	}
 
 	//【transport层】
 	//创建http.handler
-	r := transport.MakeHttpHandler(ctx, endpts, config.KitLogger)
+	//r := transport.MakeHttpHandler(ctx, endpts, config.KitLogger)
+	r := transport.MakeHttpHandler(ctx, endptsWithKit, config.KitLogger)
+
 	instanceID := *serviceName + "-" + uuid.NewV4().String()
 
 	//http server

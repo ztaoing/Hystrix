@@ -51,6 +51,28 @@ func MakeUseStringEndpoint(svc service.Service) endpoint.Endpoint {
 	}
 }
 
+//以endpoint中返回的error来统计调用失败的次数
+func MakeUseStringEndpointWithKit(svc service.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UseStringRequest)
+
+		var (
+			a, b, opErrorString string
+			opError             error
+		)
+		a = req.A
+		b = req.B
+		result, opError := svc.UseStringService(req.RequestType, a, b)
+		//注意：直接返回业务异常opError
+		//不再将业务逻辑的错误封装到response中返回，而是直接通过endpoint的err返回给transport层
+		return UseStringResponse{
+			Result: result,
+			Error:  opErrorString,
+		}, opError
+
+	}
+}
+
 //健康检查request
 type HealthRequest struct {
 }

@@ -66,7 +66,7 @@ type StringResponse struct {
 func (s UseStringService) UseStringService(oprationType, a, b string) (result string, err error) {
 	//hystrix是一种同步调用方式
 	hystrix.Do(StringServiceCommandName, func() error {
-		//获取服务列表
+		//注意：获取服务名为string的服务列表
 		instances := s.discoverClient.DiscoverServices(StringService, config.Logger)
 		instancesList := make([]*api.AgentService, len(instances))
 		for i := 0; i < len(instances); i++ {
@@ -78,7 +78,7 @@ func (s UseStringService) UseStringService(oprationType, a, b string) (result st
 		if err == nil {
 			//成功获取
 			config.Logger.Printf("current string-service ID is %s and address:port is %s:%s\n",
-				selectedInstance.ID, selectedInstance.Address, selectedInstance.Port)
+				selectedInstance.ID, selectedInstance.Address, strconv.Itoa(selectedInstance.Port))
 			requestUrl := url.URL{
 				Scheme: "http",
 				Host:   selectedInstance.Address + ":" + strconv.Itoa(selectedInstance.Port),
@@ -113,6 +113,49 @@ func (s UseStringService) UseStringService(oprationType, a, b string) (result st
 
 }
 
+//使用kit的hystrix
+func (s UseStringService) UseStringServiceWithKit(oprationType, a, b string) (result string, err error) {
+
+	//注意：获取服务名为string的服务列表
+	instances := s.discoverClient.DiscoverServices(StringService, config.Logger)
+	instancesList := make([]*api.AgentService, len(instances))
+	for i := 0; i < len(instances); i++ {
+		instancesList[i] = instances[i].(*api.AgentService)
+	}
+
+	//使用负载均衡算法获取实例
+	selectedInstance, err := s.loadbalance.SelectService(instancesList)
+	if err == nil {
+		//成功获取
+		config.Logger.Printf("current string-service ID is %s and address:port is %s:%s\n",
+			selectedInstance.ID, selectedInstance.Address, strconv.Itoa(selectedInstance.Port))
+		requestUrl := url.URL{
+			Scheme: "http",
+			Host:   selectedInstance.Address + ":" + strconv.Itoa(selectedInstance.Port),
+			Path:   "/op/" + oprationType + "/" + a + "/" + b,
+		}
+		resp, err := http.Post(requestUrl.String(), "", nil)
+		if err == nil {
+			res := &StringResponse{}
+			/*
+				区别
+				1、json.NewDecoder是从一个流里面直接进行解码，代码精干
+				2、json.Unmarshal是从已存在与内存中的json进行解码
+				3、相对于解码，json.NewEncoder进行大JSON的编码比json.marshal性能高，因为内部使用pool
+
+				场景应用
+				1、json.NewDecoder用于http连接与socket连接的读取与写入，或者文件读取
+				2、json.Unmarshal用于直接是byte的输入
+			*/
+			err = json.NewDecoder(resp.Body).Decode(result)
+			if err == nil && res.Error == nil {
+				result = res.Result
+			}
+		}
+	}
+	return result, err
+
+}
 func (s UseStringService) HealthCheck() bool {
 	return true
 }
