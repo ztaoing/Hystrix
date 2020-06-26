@@ -26,6 +26,16 @@ type HystrixHandler struct {
 	logger          *log.Logger
 }
 
+func NewHystrixHandler(discoverClient discover.DiscoveryClient, loadbalance loadbalance.LoadBalance, logger *log.Logger) *HystrixHandler {
+	return &HystrixHandler{
+		hystrixs:     make(map[string]bool),
+		hystrixMutex: &sync.Mutex{},
+
+		disvoceryClient: discoverClient,
+		loadbalance:     loadbalance,
+		logger:          logger,
+	}
+}
 func (hy *HystrixHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	reqPath := req.URL.Path
 	if reqPath == "" {
@@ -90,6 +100,7 @@ func (hy *HystrixHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			ErrorHandler: errHandler,
 		}
 
+		//进行代理转发
 		proxy.ServeHTTP(rw, req)
 
 		//将执行异常反馈给hystrix
@@ -111,6 +122,7 @@ func (hy *HystrixHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			只能写入一个头。 当前不支持发送用户定义的1xx信息标题，
 			除了100继续响应标头，读取Request.Body时，服务器会自动发送。
 		*/
+		//如果hystrix.DO中执行额代理转发逻辑出错，向客户端返回500的错误
 		rw.WriteHeader(500)
 		rw.Write([]byte(err.Error()))
 	}
