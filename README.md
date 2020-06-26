@@ -10,7 +10,7 @@
 * use-string-service 的service层 中封装了对string-service服务的http调用，同时提供了服务熔断能力
 * use-string-service 的endpoint层 中创建了UseStringEndpoint将UseStringService方法提供出去
 
-#hystrix运行流程
+# hystrix运行流程
 * 除了进行服务熔断，hystrix在执行过程中还为不同命名的远程调用提供goroutine隔离的能力。
 * goroutine隔离使得不同的远程调用方法在固定数量的goroutine下执行，控制了每种远程调用的并发数量，从而进行流量控制
 * 在某个hystrix命令调用出现大量超时阻塞时，仅仅会影响与自己命名相同的hystrix命令，并不会影响到其他hystrix命令以及系统其他请求的执行
@@ -22,7 +22,7 @@
 4. 在执行远程调用时，执行出现异常或者下游服务超时，那么hystrix命令将会向metrics控制器上传执行结果，并进入到失败回滚逻辑中
 5. metrics控制器使用滑动窗口的方式统计一段时间的调用次数、失败次数、超时次数、被拒绝次数。如果在时间窗口内的错误率超过了熔断器错误率阀值，那么断路器将会打开。
 
-#hystrix常用参数:
+# hystrix常用参数:
 * type CommandConfig struct{
 * Timeout :命令执行的超时时间，远程调用逻辑执行超过该时间将被强制执行超时，进入失败回滚逻辑
 * MaxConcurrentRequests :最大并发请求数，代表每个hystrix命令最大执行的并发goroutine数，用于进行流量控制和资源隔离。当同种hystrix执行的并发的数量超过了该值，请求将会直接进入到失败回滚逻辑中，并被标记为拒绝请求上报
