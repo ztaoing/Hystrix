@@ -46,7 +46,8 @@ func MakeHttpHandler(ctx context.Context, endpoint endpoint.UseStringEndpoint, l
 		options...,
 	))
 
-	//添加hystrix
+	//添加hystrix监控
+	//hystrixStreamHandler会把metrics控制器收集的所有状态信息按每秒1次的频率向所有连接的http客户端推送
 	hystrixStreamHandler := hystrix.NewStreamHandler()
 	hystrixStreamHandler.Start()
 	r.Handle("/hystrix/stream", hystrixStreamHandler)
